@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cursor Game</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .game-container {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            color: #333;
+            margin: 0 0 20px 0;
+        }
+
+        .game-area {
+            width: 600px;
+            height: 400px;
+            background: #f0f0f0;
+            border: 3px solid #333;
+            border-radius: 10px;
+            position: relative;
+            overflow: hidden;
+            cursor: crosshair;
+        }
+
+        .target {
+            width: 40px;
+            height: 40px;
+            background: radial-gradient(circle, #ff6b6b, #ee5a24);
+            border-radius: 50%;
+            position: absolute;
+            cursor: pointer;
+            border: 3px solid #fff;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            transition: transform 0.1s;
+        }
+
+        .target:hover {
+            transform: scale(1.1);
+        }
+
+        .score-board {
+            display: flex;
+            justify-content: space-between;
+            margin: 20px 0;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .score {
+            color: #27ae60;
+        }
+
+        .timer {
+            color: #e74c3c;
+        }
+
+        .start-btn {
+            background: #27ae60;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .start-btn:hover {
+            background: #219a52;
+        }
+
+        .start-btn:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+        }
+
+        .game-over {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 24px;
+        }
+
+        .instructions {
+            margin: 20px 0;
+            color: #666;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>🎯 Cursor Target Game</h1>
+        <div class="instructions">
+            Click on the red targets as fast as you can! You have 30 seconds to score as many points as possible.
+        </div>
+        <div class="score-board">
+            <div class="score">Score: <span id="score">0</span></div>
+            <div class="timer">Time: <span id="timer">30</span>s</div>
+        </div>
+        <div class="game-area" id="gameArea">
+            <div id="gameOver" class="game-over" style="display: none;">
+                <div>Game Over!</div>
+                <div>Final Score: <span id="finalScore">0</span></div>
+                <br>
+                <button class="start-btn" onclick="startGame()">Play Again</button>
+            </div>
+        </div>
+        <button id="startBtn" class="start-btn" onclick="startGame()">Start Game</button>
+    </div>
+
+    <script>
+        let score = 0;
+        let timeLeft = 30;
+        let gameActive = false;
+        let gameTimer;
+        let targetInterval;
+
+        const gameArea = document.getElementById('gameArea');
+        const scoreElement = document.getElementById('score');
+        const timerElement = document.getElementById('timer');
+        const startBtn = document.getElementById('startBtn');
+        const gameOverElement = document.getElementById('gameOver');
+        const finalScoreElement = document.getElementById('finalScore');
+
+        function startGame() {
+            // Reset game state
+            score = 0;
+            timeLeft = 30;
+            gameActive = true;
+            
+            // Update UI
+            scoreElement.textContent = score;
+            timerElement.textContent = timeLeft;
+            startBtn.disabled = true;
+            startBtn.textContent = 'Playing...';
+            gameOverElement.style.display = 'none';
+            
+            // Clear any existing targets
+            clearTargets();
+            
+            // Start spawning targets
+            spawnTarget();
+            targetInterval = setInterval(spawnTarget, 1500);
+            
+            // Start countdown timer
+            gameTimer = setInterval(updateTimer, 1000);
+        }
+
+        function updateTimer() {
+            timeLeft--;
+            timerElement.textContent = timeLeft;
+            
+            if (timeLeft <= 0) {
+                endGame();
+            }
+        }
+
+        function endGame() {
+            gameActive = false;
+            clearInterval(gameTimer);
+            clearInterval(targetInterval);
+            clearTargets();
+            
+            // Show game over screen
+            finalScoreElement.textContent = score;
+            gameOverElement.style.display = 'block';
+            
+            // Reset start button
+            startBtn.disabled = false;
+            startBtn.textContent = 'Start Game';
+        }
+
+        function spawnTarget() {
+            if (!gameActive) return;
+            
+            const target = document.createElement('div');
+            target.className = 'target';
+            
+            // Random position within game area
+            const maxX = gameArea.clientWidth - 40;
+            const maxY = gameArea.clientHeight - 40;
+            const x = Math.random() * maxX;
+            const y = Math.random() * maxY;
+            
+            target.style.left = x + 'px';
+            target.style.top = y + 'px';
+            
+            // Add click handler
+            target.addEventListener('click', function() {
+                if (gameActive) {
+                    score++;
+                    scoreElement.textContent = score;
+                    target.remove();
+                }
+            });
+            
+            // Auto-remove target after 3 seconds
+            setTimeout(() => {
+                if (target.parentNode) {
+                    target.remove();
+                }
+            }, 3000);
+            
+            gameArea.appendChild(target);
+        }
+
+        function clearTargets() {
+            const targets = gameArea.querySelectorAll('.target');
+            targets.forEach(target => target.remove());
+        }
+
+        // Prevent context menu on right click in game area
+        gameArea.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+        });
+    </script>
+</body>
+</html>
